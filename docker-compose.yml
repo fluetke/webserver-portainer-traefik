@@ -1,0 +1,49 @@
+version: '3.4'
+services:
+
+  webserver:
+    image: nginx:stable
+    #container_name: $COMPOSE_PROJECT_NAME
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - 80
+#    environment:
+#      - NGINX_HOST=foobar.com
+#      - NGINX_PORT=80
+
+    volumes:
+      - www:/usr/share/nginx/html:ro
+    networks:
+      - proxy
+
+    deploy:
+      placement:
+        constraints: [node.role == manager]
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.www-${COMPOSE_PROJECT_NAME}.loadbalancer.passhostheader=true"
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}.service=www-${COMPOSE_PROJECT_NAME}"  # the router called www-project will use a service called project
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}.entrypoints=http" # the router www-project will handle http traffic
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}.rule=Host(`${SITE_DOMAIN}`)" # the router www-project will handle traffic from domain SITE_DOMAIN
+      
+      - "traefik.http.middlewares.www-${COMPOSE_PROJECT_NAME}-https-redirect.redirectscheme.scheme=https" # there will be a middleware called www-project-https-redirect to secure http traffic
+   
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}.middlewares=www-${COMPOSE_PROJECT_NAME}-https-redirect" # the router www-project will make use of the middleware www-project-https-redirect
+      
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.entrypoints=https" # the router www-project-secure will handle https
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.rule=Host(`${SITE_DOMAIN}`)" #the router www-project-secure will handle SITE_DOMAIN
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.tls=true" # the router www-project-secure will use TLS
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.tls.certresolver=http" #the router will use a certificate resolver
+      - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.service=www-${COMPOSE_PROJECT_NAME}" #the router will use a service called project
+      - "traefik.docker.network=proxy"
+      
+networks:
+  proxy:
+    external: true
+    
+volumes:
+  www:
+    name: ${COMPOSE_PROJECT_NAME}_www
