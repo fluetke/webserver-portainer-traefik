@@ -16,7 +16,7 @@ services:
     volumes:
       - www:/usr/share/nginx/html
     networks:
-      - proxy
+      - proxy2
 
     deploy:
       placement:
@@ -38,10 +38,10 @@ services:
       - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.tls=true" # the router www-project-secure will use TLS
       - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.tls.certresolver=http" #the router will use a certificate resolver
       - "traefik.http.routers.www-${COMPOSE_PROJECT_NAME}-secure.service=www-${COMPOSE_PROJECT_NAME}" #the router will use a service called project
-      - "traefik.docker.network=proxy"
+      - "traefik.docker.network=proxy2"
       
 networks:
-  proxy:
+  proxy2:
     external: true
     
 volumes:
